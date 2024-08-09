@@ -1,7 +1,6 @@
 import type { ScriptData, CodeScriptData, CallScriptData } from '@/application/collections/';
 import { NoEmptyLines } from '@/application/Parser/Executable/Script/Validation/Rules/NoEmptyLines';
 import type { ILanguageSyntax } from '@/application/Parser/Executable/Script/Validation/Syntax/ILanguageSyntax';
-import { CollectionScript } from '@/domain/Executables/Script/CollectionScript';
 import { RecommendationLevel } from '@/domain/Executables/Script/RecommendationLevel';
 import type { ScriptCode } from '@/domain/Executables/Script/Code/ScriptCode';
 import type { ICodeValidator } from '@/application/Parser/Executable/Script/Validation/ICodeValidator';
@@ -10,6 +9,8 @@ import type { ScriptCodeFactory } from '@/domain/Executables/Script/Code/ScriptC
 import { createScriptCode } from '@/domain/Executables/Script/Code/ScriptCodeFactory';
 import type { Script } from '@/domain/Executables/Script/Script';
 import { createEnumParser, type EnumParser } from '@/application/Common/Enum';
+import { filterEmptyStrings } from '@/application/Common/Text/FilterEmptyStrings';
+import { createScript, type ScriptFactory } from '@/domain/Executables/Script/ScriptFactory';
 import { parseDocs, type DocsParser } from '../DocumentationParser';
 import { ExecutableType } from '../Validation/ExecutableType';
 import { createExecutableDataValidator, type ExecutableValidator, type ExecutableValidatorFactory } from '../Validation/ExecutableValidator';
@@ -37,6 +38,7 @@ export const parseScript: ScriptParser = (
   validateScript(data, validator);
   try {
     const script = scriptUtilities.createScript({
+      executableId: data.name, // Pseudo-ID for uniqueness until real ID support
       name: data.name,
       code: parseCode(
         data,
@@ -86,8 +88,7 @@ function validateHardcodedCodeWithoutCalls(
   validator: ICodeValidator,
   syntax: ILanguageSyntax,
 ) {
-  [scriptCode.execute, scriptCode.revert]
-    .filter((code): code is string => Boolean(code))
+  filterEmptyStrings([scriptCode.execute, scriptCode.revert])
     .forEach(
       (code) => validator.throwIfInvalid(
         code,
@@ -102,7 +103,7 @@ function validateScript(
 ): asserts script is NonNullable<ScriptData> {
   validator.assertType((v) => v.assertObject<CallScriptData & CodeScriptData>({
     value: script,
-    valueName: script.name ?? 'script',
+    valueName: `Script '${script.name}'` ?? 'Script',
     allowedProperties: [
       'name', 'recommend', 'code', 'revertCode', 'call', 'docs',
     ],
@@ -131,14 +132,6 @@ interface ScriptParserUtilities {
   readonly createCode: ScriptCodeFactory;
   readonly parseDocs: DocsParser;
 }
-
-export type ScriptFactory = (
-  ...parameters: ConstructorParameters<typeof CollectionScript>
-) => Script;
-
-const createScript: ScriptFactory = (...parameters) => {
-  return new CollectionScript(...parameters);
-};
 
 const DefaultUtilities: ScriptParserUtilities = {
   levelParser: createEnumParser(RecommendationLevel),

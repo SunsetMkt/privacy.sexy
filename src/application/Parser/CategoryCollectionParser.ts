@@ -1,7 +1,7 @@
 import type { CollectionData } from '@/application/collections/';
 import { OperatingSystem } from '@/domain/OperatingSystem';
-import type { ICategoryCollection } from '@/domain/ICategoryCollection';
-import { CategoryCollection } from '@/domain/CategoryCollection';
+import type { ICategoryCollection } from '@/domain/Collection/ICategoryCollection';
+import { CategoryCollection } from '@/domain/Collection/CategoryCollection';
 import type { ProjectDetails } from '@/domain/Project/ProjectDetails';
 import { createEnumParser, type EnumParser } from '../Common/Enum';
 import { parseCategory, type CategoryParser } from './Executable/CategoryParser';
@@ -45,14 +45,14 @@ function validateCollection(
 ): void {
   validator.assertObject({
     value: content,
-    valueName: 'collection',
+    valueName: 'Collection',
     allowedProperties: [
       'os', 'scripting', 'actions', 'functions',
     ],
   });
   validator.assertNonEmptyCollection({
     value: content.actions,
-    valueName: '"actions" in collection',
+    valueName: '\'actions\' in collection',
   });
 }
 
